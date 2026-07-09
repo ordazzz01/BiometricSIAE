@@ -1,0 +1,56 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOrgMember(orgId) {
+      return isAuthenticated() && 
+        request.auth.token.tenantId == orgId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        request.auth.token.admin == true;
+    }
+    
+    function isDevice() {
+      return isAuthenticated() && 
+        request.auth.token.deviceId != null;
+    }
+    
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+        request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
+    // Evidence photos
+    match /organizations/{orgId}/evidence/{allPaths=**} {
+      allow read: if isOrgMember(orgId);
+      allow write: if (isDevice() || isAdmin()) && isValidImage();
+      allow delete: if isAdmin();
+    }
+    
+    // Employee photos
+    match /organizations/{orgId}/employees/{allPaths=**} {
+      allow read: if isOrgMember(orgId);
+      allow write: if isAdmin() && isValidImage();
+      allow delete: if isAdmin();
+    }
+    
+    // Device screenshots/logs
+    match /organizations/{orgId}/devices/{allPaths=**} {
+      allow read: if isOrgMember(orgId);
+      allow write: if isDevice() || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

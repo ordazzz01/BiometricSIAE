@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOrgMember(orgId) {
+      return isAuthenticated() && 
+        request.auth.token.tenantId == orgId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        request.auth.token.admin == true;
+    }
+    
+    function isDevice() {
+      return isAuthenticated() && 
+        request.auth.token.deviceId != null;
+    }
+
+    // Organizations
+    match /organizations/{orgId} {
+      allow read: if isOrgMember(orgId);
+      allow write: if isAdmin();
+      
+      // Branches
+      match /branches/{branchId} {
+        allow read: if isOrgMember(orgId);
+        allow write: if isAdmin();
+      }
+      
+      // Employees
+      match /employees/{employeeId} {
+        allow read: if isOrgMember(orgId);
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if false; // Soft delete only
+      }
+      
+      // Attendance Records
+      match /attendance/{recordId} {
+        allow read: if isOrgMember(orgId);
+        allow create: if isDevice() || isAdmin();
+        allow update: if false; // Only server can modify
+        allow delete: if false;
+      }
+      
+      // Devices
+      match /devices/{deviceId} {
+        allow read: if isOrgMember(orgId);
+        allow create: if isAdmin();
+        allow update: if isOrgMember(orgId);
+        allow delete: if isAdmin();
+      }
+      
+      // Incidents
+      match /incidents/{incidentId} {
+        allow read: if isOrgMember(orgId);
+        allow create: if isDevice() || isAdmin();
+        allow update: if isAdmin();
+        allow delete: if false;
+      }
+      
+      // Sync Logs
+      match /sync_logs/{logId} {
+        allow read: if isOrgMember(orgId);
+        allow create: if isDevice() || isAdmin();
+        allow update: if false;
+        allow delete: if false;
+      }
+      
+      // Audit Logs
+      match /audit_logs/{logId} {
+        allow read: if isAdmin();
+        allow create: if isAuthenticated();
+        allow update: if false;
+        allow delete: if false;
+      }
+      
+      // App Settings
+      match /app_settings/{settingId} {
+        allow read: if isOrgMember(orgId);
+        allow write: if isAdmin();
+      }
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

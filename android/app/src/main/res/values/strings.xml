@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Checador Biométrico</string>
+    
+    <!-- Auth -->
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="login_subtitle">Ingrese sus credenciales</string>
+    <string name="email_hint">Correo electrónico</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="login_button">Iniciar Sesión</string>
+    <string name="logout_button">Cerrar Sesión</string>
+    <string name="login_error">Error al iniciar sesión</string>
+    
+    <!-- Checkin -->
+    <string name="checkin_title">Checador de Asistencias</string>
+    <string name="search_employee_hint">Buscar empleado por nombre o código</string>
+    <string name="select_type_title">Tipo de registro</string>
+    <string name="entry_button">Entrada</string>
+    <string name="exit_button">Salida</string>
+    <string name="break_button">Descanso</string>
+    <string name="break_return_button">Regreso</string>
+    
+    <!-- Biometric -->
+    <string name="biometric_title">Confirmar asistencia</string>
+    <string name="biometric_subtitle">Validar identidad</string>
+    <string name="biometric_cancel">Cancelar</string>
+    <string name="biometric_success">Autenticación exitosa</string>
+    <string name="biometric_error">Error de autenticación</string>
+    <string name="biometric_not_available">Biometría no disponible</string>
+    <string name="biometric_not_enrolled">Sin biometría registrada</string>
+    
+    <!-- Results -->
+    <string name="checkin_success">Registro exitoso</string>
+    <string name="checkin_duplicate">Registro duplicado</string>
+    <string name="checkin_offline">Guardado localmente</string>
+    <string name="checkin_error">Error al registrar</string>
+    
+    <!-- Status -->
+    <string name="status_online">En línea</string>
+    <string name="status_offline">Sin conexión</string>
+    <string name="status_syncing">Sincronizando…</string>
+    <string name="status_pending_sync">%d registros pendientes</string>
+    
+    <!-- Common -->
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="retry">Reintentar</string>
+    <string name="loading">Cargando…</string>
+    <string name="error_generic">Ocurrió un error</string>
+    <string name="no_data">Sin datos</string>
+</resources>

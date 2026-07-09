@@ -1,0 +1,15 @@
+# Local configuration - DO NOT COMMIT
+# Copy this file to local.properties and fill in your values
+
+# Android SDK path (auto-detected by Android Studio)
+# sdk.dir=/path/to/Android/Sdk
+
+# API Configuration
+API_BASE_URL=https://your-api.run.app
+APP_ENV=dev
+
+# Signing (for release builds)
+KEYSTORE_PATH=release.keystore
+KEYSTORE_PASSWORD=your_keystore_password
+KEY_ALIAS=your_key_alias
+KEY_PASSWORD=your_key_password
