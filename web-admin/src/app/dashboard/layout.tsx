@@ -15,7 +15,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      router.push("/auth/login");
     }
   }, [user, loading, router]);
 
@@ -41,43 +41,43 @@ export default function DashboardLayout({
         </div>
         <nav className="mt-4">
           <Link
-            href="/(dashboard)"
+            href="/dashboard"
             className="block px-4 py-2 hover:bg-gray-800"
           >
             Dashboard
           </Link>
           <Link
-            href="/(dashboard)/attendance"
+            href="/dashboard/attendance"
             className="block px-4 py-2 hover:bg-gray-800"
           >
             Asistencias
           </Link>
           <Link
-            href="/(dashboard)/employees"
+            href="/dashboard/employees"
             className="block px-4 py-2 hover:bg-gray-800"
           >
             Empleados
           </Link>
           <Link
-            href="/(dashboard)/devices"
+            href="/dashboard/devices"
             className="block px-4 py-2 hover:bg-gray-800"
           >
             Dispositivos
           </Link>
           <Link
-            href="/(dashboard)/incidents"
+            href="/dashboard/incidents"
             className="block px-4 py-2 hover:bg-gray-800"
           >
             Incidencias
           </Link>
           <Link
-            href="/(dashboard)/evidence"
+            href="/dashboard/evidence"
             className="block px-4 py-2 hover:bg-gray-800"
           >
             Evidencias
           </Link>
           <Link
-            href="/(dashboard)/branches"
+            href="/dashboard/branches"
             className="block px-4 py-2 hover:bg-gray-800"
           >
             Sucursales

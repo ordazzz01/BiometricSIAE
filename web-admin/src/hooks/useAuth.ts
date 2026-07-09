@@ -37,7 +37,7 @@ export function useAuth() {
   const logout = async () => {
     try {
       await signOut(auth);
-      router.push("/login");
+      router.push("/auth/login");
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
