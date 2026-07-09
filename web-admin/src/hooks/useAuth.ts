@@ -27,7 +27,7 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/");
+      router.push("/dashboard");
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };

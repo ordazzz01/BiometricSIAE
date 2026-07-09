@@ -20,13 +20,13 @@ export default function LoginPage() {
     setLoading(true);
 
     const result = await login(email, password);
-    
+
     if (result.success) {
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } else {
       setError(result.error || "Error al iniciar sesión");
     }
-    
+
     setLoading(false);
   };
 
