@@ -1,93 +1,76 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
+
+    // Helper: any authenticated user
     function isAuthenticated() {
       return request.auth != null;
-    }
-    
-    function isOrgMember(orgId) {
-      return isAuthenticated() && 
-        request.auth.token.tenantId == orgId;
-    }
-    
-    function isAdmin() {
-      return isAuthenticated() && 
-        request.auth.token.admin == true;
-    }
-    
-    function isDevice() {
-      return isAuthenticated() && 
-        request.auth.token.deviceId != null;
     }
 
     // Organizations
     match /organizations/{orgId} {
-      allow read: if isOrgMember(orgId);
-      allow write: if isAdmin();
-      
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+
       // Branches
       match /branches/{branchId} {
-        allow read: if isOrgMember(orgId);
-        allow write: if isAdmin();
+        allow read, write: if isAuthenticated();
       }
-      
+
       // Employees
       match /employees/{employeeId} {
-        allow read: if isOrgMember(orgId);
-        allow create: if isAdmin();
-        allow update: if isAdmin();
-        allow delete: if false; // Soft delete only
+        allow read, write: if isAuthenticated();
       }
-      
+
+      // Employee Schedules (subcollection)
+      match /employees/{employeeId}/schedules/{scheduleId} {
+        allow read, write: if isAuthenticated();
+      }
+
       // Attendance Records
-      match /attendance/{recordId} {
-        allow read: if isOrgMember(orgId);
-        allow create: if isDevice() || isAdmin();
-        allow update: if false; // Only server can modify
+      match /attendance_records/{recordId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated();
         allow delete: if false;
       }
-      
+
+      // Biometric Auth Events
+      match /biometric_auth_events/{eventId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if false;
+      }
+
       // Devices
       match /devices/{deviceId} {
-        allow read: if isOrgMember(orgId);
-        allow create: if isAdmin();
-        allow update: if isOrgMember(orgId);
-        allow delete: if isAdmin();
+        allow read, write: if isAuthenticated();
       }
-      
+
+      // Sync Queue (per device)
+      match /devices/{deviceId}/sync_queue/{queueId} {
+        allow read, write: if isAuthenticated();
+      }
+
       // Incidents
       match /incidents/{incidentId} {
-        allow read: if isOrgMember(orgId);
-        allow create: if isDevice() || isAdmin();
-        allow update: if isAdmin();
-        allow delete: if false;
+        allow read, write: if isAuthenticated();
       }
-      
-      // Sync Logs
-      match /sync_logs/{logId} {
-        allow read: if isOrgMember(orgId);
-        allow create: if isDevice() || isAdmin();
-        allow update: if false;
-        allow delete: if false;
-      }
-      
+
       // Audit Logs
       match /audit_logs/{logId} {
-        allow read: if isAdmin();
+        allow read: if isAuthenticated();
         allow create: if isAuthenticated();
-        allow update: if false;
-        allow delete: if false;
+        allow update, delete: if false;
       }
-      
+
       // App Settings
       match /app_settings/{settingId} {
-        allow read: if isOrgMember(orgId);
-        allow write: if isAdmin();
+        allow read, write: if isAuthenticated();
       }
     }
-    
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

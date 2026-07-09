@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "attendance",
+      "collectionGroup": "attendance_records",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "branchId", "order": "ASCENDING" },
@@ -9,7 +9,7 @@
       ]
     },
     {
-      "collectionGroup": "attendance",
+      "collectionGroup": "attendance_records",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "employeeId", "order": "ASCENDING" },
@@ -17,11 +17,20 @@
       ]
     },
     {
-      "collectionGroup": "attendance",
+      "collectionGroup": "attendance_records",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "syncStatus", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "attendance_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "branchId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     },
     {
@@ -46,14 +55,6 @@
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "sync_logs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "deviceId", "order": "ASCENDING" },
-        { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     },
     {
