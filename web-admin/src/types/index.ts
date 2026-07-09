@@ -102,6 +102,7 @@ export interface FaceEvidence {
   id: string;
   tenantId: string;
   attendanceRecordId: string;
+  employeeId: string;
   url: string;
   faceDetected: boolean;
   faceCentered: boolean;
