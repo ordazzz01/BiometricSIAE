@@ -13,6 +13,7 @@ export interface Branch {
   address?: string;
   latitude?: number;
   longitude?: number;
+  geofenceRadiusMeters?: number;
   timezone: string;
   active: boolean;
   createdAt: string;

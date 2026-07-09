@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Checador Biométrico</string>
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="checkin_title">Checador de Asistencias</string>
+    <string name="biometric_title">Confirmar asistencia</string>
+    <string name="entry_button">Entrada</string>
+    <string name="exit_button">Salida</string>
+    <string name="break_button">Descanso</string>
+    <string name="break_return_button">Regreso</string>
+</resources>
