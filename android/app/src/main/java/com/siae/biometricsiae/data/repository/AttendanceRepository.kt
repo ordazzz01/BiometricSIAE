@@ -208,7 +208,7 @@ class AttendanceRepository @Inject constructor(
             deviceId = entity.deviceId,
             type = com.siae.biometricsiae.domain.model.AttendanceType.valueOf(entity.type),
             timestamp = entity.timestamp,
-            timezone = ZoneId.of(entity.timezone),
+            timezone = entity.timezone,
             latitude = entity.latitude,
             longitude = entity.longitude,
             method = com.siae.biometricsiae.domain.model.AuthMethod.valueOf(entity.method),
