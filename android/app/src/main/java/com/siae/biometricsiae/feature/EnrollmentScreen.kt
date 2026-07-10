@@ -2,6 +2,7 @@ package com.siae.biometricsiae.feature
 
 import android.os.Build
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -28,6 +29,9 @@ fun EnrollmentScreen(
     repository: EnrollmentRepository,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = context as? androidx.fragment.app.FragmentActivity
+
     var fullName by remember { mutableStateOf("") }
     var rfc by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -229,13 +233,13 @@ fun EnrollmentScreen(
                     isEnrolled = false
                     isLoading = true
 
-                    biometricHelper.authenticate(
-                        activity = androidx.fragment.app.FragmentActivity::class.java.cast(
-                            context as? androidx.fragment.app.FragmentActivity
-                        ),
-                        title = "Registrar biometría",
-                        subtitle = "Confirme su identidad"
-                    )
+                    if (activity != null) {
+                        biometricHelper.authenticate(
+                            activity = activity,
+                            title = "Registrar biometría",
+                            subtitle = "Confirme su identidad"
+                        )
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
