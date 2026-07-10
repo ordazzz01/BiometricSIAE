@@ -24,11 +24,14 @@ export interface Employee {
   tenantId: string;
   code: string;
   name: string;
+  rfc?: string;
   department?: string;
+  shift?: string;
   position?: string;
   photoUrl?: string;
   branchIds: string[];
   scheduleId?: string;
+  fingerprintId?: string;
   biometricEnrolled: boolean;
   faceRegistered: boolean;
   active: boolean;
