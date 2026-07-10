@@ -106,7 +106,9 @@ class FaceRecognitionManager(
 
             if (result != null) {
                 if (result.ambiguous) {
-                    _state.value = RecognitionState.Ambiguous(listOf(result))
+                    val ambiguous = RecognitionState.Ambiguous(listOf(result))
+                    _state.value = ambiguous
+                    ambiguous
                 } else {
                     val identified = RecognitionState.Identified(
                         personId = result.embedding.personId,
@@ -118,8 +120,9 @@ class FaceRecognitionManager(
                     identified
                 }
             } else {
-                _state.value = RecognitionState.NotIdentified
-                RecognitionState.NotIdentified
+                val notIdentified = RecognitionState.NotIdentified
+                _state.value = notIdentified
+                notIdentified
             }
         } catch (e: Exception) {
             val error = RecognitionState.Error("Error: ${e.message}")

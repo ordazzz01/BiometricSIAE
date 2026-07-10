@@ -116,14 +116,7 @@ class FaceEnrollmentRepository(
                     val quality = (embeddingDoc.getDouble("quality") ?: 0.8).toFloat()
                     val deviceId = embeddingDoc.getString("deviceIdCreated") ?: ""
 
-                    saveToLocalCache(
-                        personId = personId,
-                        rfc = rfc,
-                        fullName = fullName,
-                        vector = vector.map { it.toFloat() }.toFloatArray(),
-                        quality = quality,
-                        deviceId = deviceId
-                    )
+                    saveToLocalCache(personId, rfc, fullName, vector.map { it.toFloat() }.toFloatArray(), quality, deviceId)
                 }
             }
         } catch (e: Exception) {
