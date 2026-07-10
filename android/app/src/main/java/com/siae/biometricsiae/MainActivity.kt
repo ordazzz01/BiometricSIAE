@@ -89,8 +89,7 @@ class MainActivity : FragmentActivity() {
                             onEnrollment = { currentScreen = "enrollment" }
                         )
                         "enrollment" -> EnrollmentScreen(
-                            biometricHelper = biometricHelper,
-                            repository = enrollmentRepository,
+                            enrollmentRepository = enrollmentRepository,
                             onBack = { currentScreen = "settings" }
                         )
                     }

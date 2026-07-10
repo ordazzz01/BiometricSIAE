@@ -49,6 +49,105 @@ class EnrollmentRepository {
             .await()
     }
 
+    /**
+     * Registra un enrolamiento biométrico con credencial criptográfica.
+     *
+     * IMPORTANTE: No almacena huellas digitales.
+     * Guarda credentialId (SHA-256 de la clave pública) como referencia.
+     */
+    suspend fun enrollPerson(
+        fullName: String,
+        rfc: String,
+        deviceId: String,
+        keyAlias: String,
+        credentialId: String,
+        publicKeyFingerprint: String,
+        algorithm: String
+    ): Pair<String, String> {
+        val normalizedRfc = rfc.uppercase().trim()
+        val existingPerson = findPersonByRfc(normalizedRfc)
+
+        val eventType: String
+        val personId: String
+
+        if (existingPerson != null) {
+            eventType = if (existingPerson.fullName != fullName) "update" else "enroll"
+            val updates = mapOf(
+                "fullName" to fullName,
+                "biometricEnabled" to true,
+                "updatedAt" to Timestamp.now(),
+                "lastUpdatedByDeviceId" to deviceId
+            )
+            updatePerson(existingPerson.id, updates)
+            personId = existingPerson.id
+        } else {
+            eventType = "create"
+            val newPerson = Person(
+                fullName = fullName,
+                rfc = normalizedRfc,
+                biometricEnabled = true,
+                status = "active",
+                createdAt = Timestamp.now(),
+                updatedAt = Timestamp.now(),
+                createdByDeviceId = deviceId,
+                lastUpdatedByDeviceId = deviceId
+            )
+            personId = createPerson(newPerson)
+        }
+
+        // Create or update biometric credential
+        createBiometricCredential(
+            personId = personId,
+            deviceId = deviceId,
+            keyAlias = keyAlias,
+            credentialId = credentialId,
+            publicKeyFingerprint = publicKeyFingerprint,
+            algorithm = algorithm
+        )
+
+        // Create enrollment event
+        createEnrollmentEvent(
+            personId = personId,
+            rfc = normalizedRfc,
+            fullNameSnapshot = fullName,
+            deviceId = deviceId,
+            eventType = eventType,
+            authResult = "success",
+            appVersion = "1.0.0",
+            credentialId = credentialId
+        )
+
+        return Pair(personId, eventType)
+    }
+
+    private suspend fun createBiometricCredential(
+        personId: String,
+        deviceId: String,
+        keyAlias: String,
+        credentialId: String,
+        publicKeyFingerprint: String,
+        algorithm: String
+    ) {
+        val credential = mapOf(
+            "deviceId" to deviceId,
+            "keyAlias" to keyAlias,
+            "publicKeyFingerprint" to publicKeyFingerprint,
+            "algorithm" to algorithm,
+            "createdAt" to Timestamp.now(),
+            "lastUsedAt" to Timestamp.now(),
+            "status" to "active"
+        )
+
+        db.collection("organizations")
+            .document(orgId)
+            .collection("persons")
+            .document(personId)
+            .collection("biometric_credentials")
+            .document(credentialId)
+            .set(credential)
+            .await()
+    }
+
     suspend fun upsertPersonByRfc(
         fullName: String,
         rfc: String,
@@ -145,7 +244,8 @@ class EnrollmentRepository {
         deviceId: String,
         eventType: String,
         authResult: String,
-        appVersion: String
+        appVersion: String,
+        credentialId: String = ""
     ) {
         val eventId = UUID.randomUUID().toString()
         val event = EnrollmentEvent(
