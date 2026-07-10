@@ -64,6 +64,28 @@
         { "fieldPath": "action", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "persons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "rfc", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "persons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "fullName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "enrollment_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "personId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

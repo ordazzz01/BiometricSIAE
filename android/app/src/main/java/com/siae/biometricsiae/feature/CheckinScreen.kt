@@ -103,17 +103,17 @@ fun CheckinScreen(
         }
     }
 
-    // Update clock
+    // Update clock - HH:mm only (no seconds)
     LaunchedEffect(Unit) {
         while (true) {
             val now = Date()
-            currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(now)
+            currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(now)
             currentDate = SimpleDateFormat("EEEE, d 'de' MMMM", Locale("es")).format(now)
             delay(1000)
         }
     }
 
-    // Dim screen after 30s inactivity (don't turn off)
+    // Dim screen after 30s inactivity to 10% brightness
     LaunchedEffect(lastActivityTime) {
         while (true) {
             delay(1000)
@@ -121,19 +121,19 @@ fun CheckinScreen(
             if (elapsed > 30000 && !isScreenDimmed) {
                 isScreenDimmed = true
                 activity?.window?.attributes = activity.window.attributes.apply {
-                    screenBrightness = 0.05f
+                    screenBrightness = 0.10f
                 }
             }
         }
     }
 
-    // Restore brightness on activity
+    // Restore brightness to 80% on activity
     fun onUserActivity() {
         lastActivityTime = System.currentTimeMillis()
         if (isScreenDimmed) {
             isScreenDimmed = false
             activity?.window?.attributes = activity.window.attributes.apply {
-                screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+                screenBrightness = 0.80f
             }
         }
     }

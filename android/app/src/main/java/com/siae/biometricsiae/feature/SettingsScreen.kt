@@ -21,7 +21,8 @@ import com.siae.biometricsiae.data.FirestoreRepository
 fun SettingsScreen(
     biometricHelper: BiometricHelper,
     repository: FirestoreRepository,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEnrollment: () -> Unit = {}
 ) {
     var isAuthorized by remember { mutableStateOf(false) }
     var employees by remember { mutableStateOf<List<Employee>>(emptyList()) }
@@ -103,6 +104,16 @@ fun SettingsScreen(
                         Text("Modelo: ${android.os.Build.MODEL}")
                         Text("Versión: 1.0.0")
                     }
+                }
+            }
+
+            // Enrollment button
+            item {
+                Button(
+                    onClick = onEnrollment,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Alta Biométrica")
                 }
             }
 

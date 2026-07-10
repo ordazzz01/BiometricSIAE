@@ -88,6 +88,12 @@ export default function DashboardLayout({
           >
             Huellas
           </Link>
+          <Link
+            href="/dashboard/persons"
+            className="block px-4 py-2 hover:bg-gray-800"
+          >
+            Personas
+          </Link>
         </nav>
         <div className="absolute bottom-0 w-64 p-4">
           <p className="text-sm text-gray-400 mb-2">{user.email}</p>

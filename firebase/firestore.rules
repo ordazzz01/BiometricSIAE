@@ -69,6 +69,29 @@ service cloud.firestore {
       match /app_settings/{settingId} {
         allow read, write: if isAuthenticated();
       }
+
+      // Persons (biometric enrollment)
+      match /persons/{personId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated();
+        allow delete: if false;
+
+        // Device enrollments (subcollection)
+        match /device_enrollments/{enrollmentId} {
+          allow read: if isAuthenticated();
+          allow create: if isAuthenticated();
+          allow update: if isAuthenticated();
+          allow delete: if false;
+        }
+      }
+
+      // Enrollment Events (audit trail)
+      match /enrollment_events/{eventId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if false;
+      }
     }
 
     // Deny all other access

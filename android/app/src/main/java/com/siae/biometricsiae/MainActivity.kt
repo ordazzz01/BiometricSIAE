@@ -12,8 +12,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import com.siae.biometricsiae.data.EnrollmentRepository
 import com.siae.biometricsiae.data.FirestoreRepository
 import com.siae.biometricsiae.feature.CheckinScreen
+import com.siae.biometricsiae.feature.EnrollmentScreen
 import com.siae.biometricsiae.feature.SettingsScreen
 import com.siae.biometricsiae.ui.theme.BiometricSIAETheme
 import kotlinx.coroutines.launch
@@ -22,15 +24,13 @@ class MainActivity : FragmentActivity() {
 
     private lateinit var biometricHelper: BiometricHelper
     private val repository = FirestoreRepository()
+    private val enrollmentRepository = EnrollmentRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         biometricHelper = BiometricHelper(this)
 
-        // Full screen mode
         enableFullScreen()
-
-        // Keep screen on
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContent {
@@ -47,19 +47,15 @@ class MainActivity : FragmentActivity() {
                             biometricHelper = biometricHelper,
                             repository = repository,
                             onSettingsClick = {
-                                // Request device fingerprint to access settings
                                 biometricHelper.authenticate(
                                     activity = this@MainActivity,
                                     title = "Acceso a Configuración",
-                                    subtitle = "Verifique su identidad con huella del dispositivo"
+                                    subtitle = "Verifique su identidad"
                                 )
                                 scope.launch {
                                     biometricHelper.resultFlow.collect { result ->
-                                        when (result) {
-                                            is BiometricHelper.BiometricResult.Success -> {
-                                                currentScreen = "settings"
-                                            }
-                                            else -> {}
+                                        if (result is BiometricHelper.BiometricResult.Success) {
+                                            currentScreen = "settings"
                                         }
                                     }
                                 }
@@ -72,19 +68,15 @@ class MainActivity : FragmentActivity() {
                                 )
                             },
                             onExit = {
-                                // Request device fingerprint to exit
                                 biometricHelper.authenticate(
                                     activity = this@MainActivity,
-                                    title = "Salir de la aplicación",
-                                    subtitle = "Solo puede salir con huella del dispositivo"
+                                    title = "Salir",
+                                    subtitle = "Huella del dispositivo requerida"
                                 )
                                 scope.launch {
                                     biometricHelper.resultFlow.collect { result ->
-                                        when (result) {
-                                            is BiometricHelper.BiometricResult.Success -> {
-                                                finish()
-                                            }
-                                            else -> {}
+                                        if (result is BiometricHelper.BiometricResult.Success) {
+                                            finish()
                                         }
                                     }
                                 }
@@ -93,7 +85,13 @@ class MainActivity : FragmentActivity() {
                         "settings" -> SettingsScreen(
                             biometricHelper = biometricHelper,
                             repository = repository,
-                            onBack = { currentScreen = "checkin" }
+                            onBack = { currentScreen = "checkin" },
+                            onEnrollment = { currentScreen = "enrollment" }
+                        )
+                        "enrollment" -> EnrollmentScreen(
+                            biometricHelper = biometricHelper,
+                            repository = enrollmentRepository,
+                            onBack = { currentScreen = "settings" }
                         )
                     }
                 }
@@ -111,7 +109,5 @@ class MainActivity : FragmentActivity() {
     }
 
     @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        // Disabled - kiosk mode
-    }
+    override fun onBackPressed() {}
 }
