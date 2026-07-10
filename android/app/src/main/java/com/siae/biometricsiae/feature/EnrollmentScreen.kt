@@ -97,11 +97,6 @@ fun EnrollmentScreen(
                     statusMessage = "Biometría no disponible. Configure huella en el dispositivo."
                     statusType = StatusType.ERROR
                 }
-                is BiometricEnrollmentManager.EnrollmentResult.BiometricNotEnrolled -> {
-                    isLoading = false
-                    statusMessage = "No hay huellas enroladas en el dispositivo"
-                    statusType = StatusType.ERROR
-                }
             }
         }
     }
