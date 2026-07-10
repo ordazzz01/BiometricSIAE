@@ -2,6 +2,8 @@ package com.siae.biometricsiae.security
 
 import android.content.Context
 import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -209,7 +211,7 @@ class BiometricEnrollmentManager(
         payload: String,
         signature: ByteArray
     ) {
-        viewModelScope.launch {
+        scope.launch {
             try {
                 val (personId, eventType) = enrollmentRepository.enrollPerson(
                     fullName = fullName,
@@ -246,7 +248,6 @@ class BiometricEnrollmentManager(
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
         )
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPurposes(KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
             .setUserAuthenticationRequired(false)
             .build()
         keyGenerator.init(spec)

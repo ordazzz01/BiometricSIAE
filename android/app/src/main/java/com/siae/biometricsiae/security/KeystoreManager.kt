@@ -45,10 +45,9 @@ class KeystoreManager {
 
         val spec = KeyGenParameterSpec.Builder(
             keyAlias,
-            KeyProperties.PURPOSE_SIGN
+            KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
         )
             .setDigests(KeyProperties.DIGEST_SHA256)
-            .setSignaturePurposes(KeyProperties.SIGNATURE_PURPOSE_VERIFY)
             .setUserAuthenticationRequired(true)
             .setInvalidatedByBiometricEnrollment(true)
             .setKeySize(256)
