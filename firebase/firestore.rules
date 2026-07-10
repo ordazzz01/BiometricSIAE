@@ -2,101 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: any authenticated user
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Organizations
-    match /organizations/{orgId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
-
-      // Branches
-      match /branches/{branchId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      // Employees
-      match /employees/{employeeId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      // Employee Schedules (subcollection)
-      match /employees/{employeeId}/schedules/{scheduleId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      // Attendance Records
-      match /attendance_records/{recordId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update: if isAuthenticated();
-        allow delete: if false;
-      }
-
-      // Biometric Auth Events
-      match /biometric_auth_events/{eventId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update, delete: if false;
-      }
-
-      // Devices
-      match /devices/{deviceId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      // Sync Queue (per device)
-      match /devices/{deviceId}/sync_queue/{queueId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      // Incidents
-      match /incidents/{incidentId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      // Audit Logs
-      match /audit_logs/{logId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update, delete: if false;
-      }
-
-      // App Settings
-      match /app_settings/{settingId} {
-        allow read, write: if isAuthenticated();
-      }
-
-      // Persons (biometric enrollment)
-      match /persons/{personId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update: if isAuthenticated();
-        allow delete: if false;
-
-        // Device enrollments (subcollection)
-        match /device_enrollments/{enrollmentId} {
-          allow read: if isAuthenticated();
-          allow create: if isAuthenticated();
-          allow update: if isAuthenticated();
-          allow delete: if false;
-        }
-      }
-
-      // Enrollment Events (audit trail)
-      match /enrollment_events/{eventId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update, delete: if false;
-      }
-    }
-
-    // Deny all other access
+    // For development: allow all access
+    // In production, add authentication checks
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
