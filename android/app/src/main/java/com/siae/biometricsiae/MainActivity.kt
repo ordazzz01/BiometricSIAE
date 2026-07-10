@@ -3,84 +3,54 @@ package com.siae.biometricsiae
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
+import com.siae.biometricsiae.data.FirestoreRepository
+import com.siae.biometricsiae.feature.CheckinScreen
+import com.siae.biometricsiae.feature.SettingsScreen
 import com.siae.biometricsiae.ui.theme.BiometricSIAETheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
+
+    private lateinit var biometricHelper: BiometricHelper
+    private val repository = FirestoreRepository()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        biometricHelper = BiometricHelper(this)
+
         setContent {
             BiometricSIAETheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    var currentScreen by remember { mutableStateOf("checkin") }
+
+                    when (currentScreen) {
+                        "checkin" -> CheckinScreen(
+                            biometricHelper = biometricHelper,
+                            repository = repository,
+                            onSettingsClick = { currentScreen = "settings" },
+                            onBiometricRequest = {
+                                biometricHelper.authenticate(
+                                    activity = this@MainActivity,
+                                    title = "Confirmar asistencia",
+                                    subtitle = "Toque su huella"
+                                )
+                            }
+                        )
+                        "settings" -> SettingsScreen(
+                            repository = repository,
+                            onBack = { currentScreen = "checkin" }
+                        )
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun MainScreen() {
-    var status by remember { mutableStateOf("Iniciando...") }
-    var employeeCount by remember { mutableIntStateOf(0) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Checador Biométrico",
-            fontSize = 28.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "v1.0.0",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Estado del Sistema",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Firebase: Conectado")
-                Text("Firestore: Disponible")
-                Text("Estado: $status")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { status = if (status == "Listo") "Sincronizando..." else "Listo" },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Verificar Conexión")
         }
     }
 }
