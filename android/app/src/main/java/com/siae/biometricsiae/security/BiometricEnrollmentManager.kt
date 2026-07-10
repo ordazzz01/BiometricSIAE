@@ -2,8 +2,6 @@ package com.siae.biometricsiae.security
 
 import android.content.Context
 import android.os.Build
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -15,24 +13,23 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.security.KeyPair
 import java.security.Signature
-import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
 
 /**
  * BiometricEnrollmentManager - Orquesta el flujo de enrolamiento biométrico.
  *
- * IMPORTANTE: Esta clase NO almacena huellas digitales.
- * Usa Android Keystore + BiometricPrompt con CryptoObject para:
- * 1. Generar una clave criptográfica en el Keystore
- * 2. Exigir autenticación biométrica para usar la clave
- * 3. Firmar un payload de verificación
- * 4. Guardar el credentialId (hash de la clave pública) en Firestore
+ * FLUJO CORRECTO:
+ * 1. Verificar disponibilidad biométrica
+ * 2. Generar clave EC en Keystore (setUserAuthenticationRequired=true)
+ * 3. Obtener la clave privada del Keystore
+ * 4. Crear Signature con la clave privada
+ * 5. Lanzar BiometricPrompt con CryptoObject(Signature)
+ * 6. Si autenticación exitosa → Signature se inicializa → firmar payload
+ * 7. Guardar credentialId en Firestore
  *
- * El credentialId es una referencia criptográfica, NO la huella digital.
+ * IMPORTANTE: La clave EC no se puede usar hasta que BiometricPrompt
+ * confirme la identidad. El CryptoObject contiene la Signature que
+ * será inicializada después de la autenticación biométrica.
  */
 class BiometricEnrollmentManager(
     private val context: Context,
@@ -55,12 +52,8 @@ class BiometricEnrollmentManager(
         data class Error(val message: String) : EnrollmentResult()
         data object Cancelled : EnrollmentResult()
         data object BiometricNotAvailable : EnrollmentResult()
-        data object BiometricNotEnrolled : EnrollmentResult()
     }
 
-    /**
-     * Verifica si el dispositivo soporta biometría fuerte.
-     */
     fun canAuthenticate(): Boolean {
         return when (BiometricManager.from(context).canAuthenticate(
             BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -70,9 +63,6 @@ class BiometricEnrollmentManager(
         }
     }
 
-    /**
-     * Obtiene el estado de disponibilidad biométrica.
-     */
     fun getBiometricStatus(): String {
         return when (BiometricManager.from(context).canAuthenticate(
             BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -80,20 +70,21 @@ class BiometricEnrollmentManager(
             BiometricManager.BIOMETRIC_SUCCESS -> "Biometría fuerte disponible"
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> "Sin hardware biométrico"
             BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> "Hardware no disponible"
-            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "Sin biometría enrolada en el dispositivo"
-            BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> "Actualización de seguridad requerida"
-            BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED -> "No soportado"
-            else -> "Error desconocido"
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "Sin biometría enrolada"
+            else -> "Biometría no disponible"
         }
     }
 
     /**
      * Ejecuta el flujo completo de enrolamiento biométrico.
      *
-     * @param activity FragmentActivity para mostrar BiometricPrompt
-     * @param personId ID de la persona (o vacío si es nueva)
-     * @param fullName Nombre completo
-     * @param rfc RFC de la persona
+     * FLUJO:
+     * 1. Generar clave EC en Keystore (sin biometría aún)
+     * 2. Obtener la clave privada
+     * 3. Crear Signature con la clave privada
+     * 4. BiometricPrompt firma con CryptoObject
+     * 5. Después de autenticación → Signature inicializada → firmar
+     * 6. Guardar credentialId en Firestore
      */
     fun enroll(
         activity: FragmentActivity,
@@ -101,7 +92,6 @@ class BiometricEnrollmentManager(
         fullName: String,
         rfc: String
     ) {
-        // Paso 1: Verificar disponibilidad biométrica
         if (!canAuthenticate()) {
             _resultChannel.trySend(EnrollmentResult.BiometricNotAvailable)
             return
@@ -110,23 +100,33 @@ class BiometricEnrollmentManager(
         val deviceId = Build.SERIAL ?: Build.MODEL
         val keyAlias = keystoreManager.generateKeyAlias(personId, deviceId)
 
-        // Paso 2: Generar clave en Keystore
         _resultChannel.trySend(EnrollmentResult.GeneratingKey)
 
         try {
+            // Paso 1: Generar clave EC en Keystore (sin biometría)
             val keyPair = keystoreManager.generateKey(personId, deviceId)
 
-            // Paso 3: Preparar CryptoObject
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
-            val cryptoObject = BiometricPrompt.CryptoObject(cipher)
+            // Paso 2: Obtener la clave privada
+            val privateKey = keystoreManager.getPrivateKey(keyAlias)
+            if (privateKey == null) {
+                _resultChannel.trySend(EnrollmentResult.Error("No se pudo obtener la clave privada"))
+                return
+            }
 
-            // Paso 4: Lanzar BiometricPrompt con CryptoObject
+            // Paso 3: Crear Signature con la clave privada
+            // La Signature se inicializará DESPUÉS de la autenticación biométrica
+            val signature = Signature.getInstance("SHA256withECDSA")
+            signature.initSign(privateKey)
+
+            // Paso 4: Crear CryptoObject con la Signature
+            val cryptoObject = BiometricPrompt.CryptoObject(signature)
+
+            // Paso 5: Lanzar BiometricPrompt
             _resultChannel.trySend(EnrollmentResult.Authenticating)
             authenticateWithCrypto(activity, cryptoObject, fullName, rfc, deviceId, keyAlias)
 
         } catch (e: Exception) {
-            _resultChannel.trySend(EnrollmentResult.Error("Error al generar clave: ${e.message}"))
+            _resultChannel.trySend(EnrollmentResult.Error("Error: ${e.message}"))
         }
     }
 
@@ -144,30 +144,34 @@ class BiometricEnrollmentManager(
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                 super.onAuthenticationSucceeded(result)
 
-                // Paso 5: Generar payload y firmar
-                val payload = "${rfc}|${deviceId}|${System.currentTimeMillis()}"
-                val signature = keystoreManager.signPayload(keyAlias, payload)
+                try {
+                    // La Signature ya está inicializada después de la autenticación
+                    val signature = result.cryptoObject?.signature
+                    if (signature != null) {
+                        // Firmar el payload
+                        val payload = "${rfc}|${deviceId}|${System.currentTimeMillis()}"
+                        signature.update(payload.toByteArray())
+                        val signedData = signature.sign()
 
-                if (signature != null) {
-                    // Paso 6: Calcular credentialId
-                    val credentialId = keystoreManager.getPublicKeyFingerprint(keyAlias)
+                        // Calcular credentialId
+                        val credentialId = keystoreManager.getPublicKeyFingerprint(keyAlias)
 
-                    if (credentialId != null) {
-                        // Paso 7: Guardar en Firestore
-                        processEnrollment(
-                            fullName = fullName,
-                            rfc = rfc,
-                            deviceId = deviceId,
-                            keyAlias = keyAlias,
-                            credentialId = credentialId,
-                            payload = payload,
-                            signature = signature
-                        )
+                        if (credentialId != null && signedData != null) {
+                            processEnrollment(
+                                fullName = fullName,
+                                rfc = rfc,
+                                deviceId = deviceId,
+                                keyAlias = keyAlias,
+                                credentialId = credentialId
+                            )
+                        } else {
+                            _resultChannel.trySend(EnrollmentResult.Error("No se pudo generar credentialId"))
+                        }
                     } else {
-                        _resultChannel.trySend(EnrollmentResult.Error("No se pudo generar credentialId"))
+                        _resultChannel.trySend(EnrollmentResult.Error("Firma no disponible"))
                     }
-                } else {
-                    _resultChannel.trySend(EnrollmentResult.Error("Error al firmar payload"))
+                } catch (e: Exception) {
+                    _resultChannel.trySend(EnrollmentResult.Error("Error al procesar: ${e.message}"))
                 }
             }
 
@@ -207,9 +211,7 @@ class BiometricEnrollmentManager(
         rfc: String,
         deviceId: String,
         keyAlias: String,
-        credentialId: String,
-        payload: String,
-        signature: ByteArray
+        credentialId: String
     ) {
         scope.launch {
             try {
@@ -236,21 +238,5 @@ class BiometricEnrollmentManager(
                 )
             }
         }
-    }
-
-    private fun getSecretKey(): SecretKey {
-        val keyGenerator = KeyGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES,
-            "AndroidKeyStore"
-        )
-        val spec = KeyGenParameterSpec.Builder(
-            "enrollment_key",
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setUserAuthenticationRequired(false)
-            .build()
-        keyGenerator.init(spec)
-        return keyGenerator.generateKey()
     }
 }
