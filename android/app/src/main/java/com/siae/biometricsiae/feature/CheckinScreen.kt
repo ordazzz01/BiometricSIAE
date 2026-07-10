@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -70,8 +69,23 @@ fun CheckinScreen(
     val nextIndex = (currentIndex + 1).coerceAtMost(4)
     val fraction = colorIndex - currentIndex
 
-    val animatedColor1 = lerp(gradientColors[currentIndex], gradientColors[nextIndex], fraction)
-    val animatedColor2 = lerp(gradientColors[(currentIndex + 1).coerceAtMost(4)], gradientColors[(currentIndex + 2).coerceAtMost(4)], fraction)
+    // Simple color interpolation
+    fun lerpColor(start: Color, end: Color, fraction: Float): Color {
+        val startR = start.red
+        val startG = start.green
+        val startB = start.blue
+        val endR = end.red
+        val endG = end.green
+        val endB = end.blue
+        return Color(
+            red = startR + (endR - startR) * fraction,
+            green = startG + (endG - startG) * fraction,
+            blue = startB + (endB - startB) * fraction
+        )
+    }
+
+    val animatedColor1 = lerpColor(gradientColors[currentIndex], gradientColors[nextIndex], fraction)
+    val animatedColor2 = lerpColor(gradientColors[(currentIndex + 1).coerceAtMost(4)], gradientColors[(currentIndex + 2).coerceAtMost(4)], fraction)
 
     // Update clock
     LaunchedEffect(Unit) {
