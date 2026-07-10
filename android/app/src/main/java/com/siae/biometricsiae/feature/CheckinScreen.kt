@@ -1,6 +1,8 @@
 package com.siae.biometricsiae.feature
 
 import android.app.Activity
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.view.WindowManager
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -42,15 +44,16 @@ fun CheckinScreen(
 
     var currentTime by remember { mutableStateOf("") }
     var currentDate by remember { mutableStateOf("") }
-    var statusMessage by remember { mutableStateOf("Toque su huella para registrar asistencia") }
+    var statusMessage by remember { mutableStateOf("Registre su huella") }
     var statusColor by remember { mutableStateOf(Color.White) }
     var isProcessing by remember { mutableStateOf(false) }
     var showResult by remember { mutableStateOf(false) }
     var resultSuccess by remember { mutableStateOf(true) }
     var resultMessage by remember { mutableStateOf("") }
     var lastActivityTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var isScreenDimmed by remember { mutableStateOf(false) }
 
-    // Animated background - SLOW (60 seconds per cycle)
+    // Animated background - SLOW (60 seconds)
     val infiniteTransition = rememberInfiniteTransition(label = "background")
     val colorIndex by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -89,6 +92,17 @@ fun CheckinScreen(
         fraction
     )
 
+    // Play click sound on success
+    fun playClickSound() {
+        try {
+            val toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+            toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 150)
+            toneGenerator.release()
+        } catch (e: Exception) {
+            // Ignore sound errors
+        }
+    }
+
     // Update clock
     LaunchedEffect(Unit) {
         while (true) {
@@ -99,25 +113,28 @@ fun CheckinScreen(
         }
     }
 
-    // Screen timeout - dim after 30s of inactivity
+    // Dim screen after 30s inactivity (don't turn off)
     LaunchedEffect(lastActivityTime) {
         while (true) {
             delay(1000)
             val elapsed = System.currentTimeMillis() - lastActivityTime
-            if (elapsed > 30000) {
-                // Dim screen
+            if (elapsed > 30000 && !isScreenDimmed) {
+                isScreenDimmed = true
                 activity?.window?.attributes = activity.window.attributes.apply {
-                    screenBrightness = 0.1f
+                    screenBrightness = 0.05f
                 }
             }
         }
     }
 
-    // Reset brightness on any touch
+    // Restore brightness on activity
     fun onUserActivity() {
         lastActivityTime = System.currentTimeMillis()
-        activity?.window?.attributes = activity.window.attributes.apply {
-            screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+        if (isScreenDimmed) {
+            isScreenDimmed = false
+            activity?.window?.attributes = activity.window.attributes.apply {
+                screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+            }
         }
     }
 
@@ -142,8 +159,9 @@ fun CheckinScreen(
                     isProcessing = false
 
                     if (success) {
+                        playClickSound()
                         resultSuccess = true
-                        resultMessage = "Asistencia registrada"
+                        resultMessage = "¡Éxito! Asistencia registrada"
                         statusMessage = "¡Éxito! Asistencia registrada"
                         statusColor = Color(0xFF4CAF50)
                     } else {
@@ -155,32 +173,32 @@ fun CheckinScreen(
                     showResult = true
                     delay(3000)
                     showResult = false
-                    statusMessage = "Toque su huella para registrar asistencia"
+                    statusMessage = "Registre su huella"
                     statusColor = Color.White
                 }
                 is BiometricHelper.BiometricResult.UserCancelled -> {
-                    statusMessage = "Toque el sensor para intentar de nuevo"
+                    statusMessage = "Intente de nuevo"
                     statusColor = Color(0xFFFFC107)
                     delay(2000)
-                    statusMessage = "Toque su huella para registrar asistencia"
+                    statusMessage = "Registre su huella"
                     statusColor = Color.White
                 }
                 is BiometricHelper.BiometricResult.Error -> {
                     statusMessage = "Error: ${result.message}"
                     statusColor = Color(0xFFF44336)
                     delay(2000)
-                    statusMessage = "Toque su huella para registrar asistencia"
+                    statusMessage = "Registre su huella"
                     statusColor = Color.White
                 }
                 is BiometricHelper.BiometricResult.NotAvailable -> {
-                    statusMessage = "Huella no disponible en este dispositivo"
+                    statusMessage = "Huella no disponible"
                     statusColor = Color(0xFFFF9800)
                 }
             }
         }
     }
 
-    // Full screen - no status bar, no navigation bar
+    // Full screen
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -202,7 +220,6 @@ fun CheckinScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Settings button (small icon)
                 IconButton(
                     onClick = { onSettingsClick() },
                     modifier = Modifier.size(48.dp)
@@ -215,21 +232,20 @@ fun CheckinScreen(
                     )
                 }
 
-                // Title
                 Text(
                     text = "Checador Biométrico",
                     fontSize = 18.sp,
                     color = Color.White.copy(alpha = 0.9f)
                 )
 
-                // Exit button (small icon)
+                // Exit button - only works with device fingerprint
                 IconButton(
                     onClick = { onExit() },
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         Icons.Default.Fingerprint,
-                        contentDescription = "Salir",
+                        contentDescription = "Salir (requiere huella)",
                         tint = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.size(24.dp)
                     )
@@ -302,7 +318,7 @@ fun CheckinScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // SINGLE big button to activate fingerprint sensor
+            // SINGLE button - "Registre su huella"
             Button(
                 onClick = {
                     onUserActivity()
@@ -334,18 +350,11 @@ fun CheckinScreen(
                         tint = Color.White
                     )
                     Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "Registrar Asistencia",
-                            fontSize = 20.sp,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Toque el sensor de huella",
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
-                    }
+                    Text(
+                        text = "Registre su huella",
+                        fontSize = 22.sp,
+                        color = Color.White
+                    )
                 }
             }
 

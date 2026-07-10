@@ -3,7 +3,6 @@ package com.siae.biometricsiae
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
-import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -12,10 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.fragment.app.FragmentActivity
 import com.siae.biometricsiae.data.FirestoreRepository
 import com.siae.biometricsiae.feature.CheckinScreen
 import com.siae.biometricsiae.feature.SettingsScreen
 import com.siae.biometricsiae.ui.theme.BiometricSIAETheme
+import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
 
@@ -38,6 +39,7 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val scope = rememberCoroutineScope()
                     var currentScreen by remember { mutableStateOf("checkin") }
 
                     when (currentScreen) {
@@ -45,14 +47,22 @@ class MainActivity : FragmentActivity() {
                             biometricHelper = biometricHelper,
                             repository = repository,
                             onSettingsClick = {
-                                // Request device fingerprint before opening settings
+                                // Request device fingerprint to access settings
                                 biometricHelper.authenticate(
                                     activity = this@MainActivity,
                                     title = "Acceso a Configuración",
-                                    subtitle = "Verifique su identidad"
+                                    subtitle = "Verifique su identidad con huella del dispositivo"
                                 )
-                                // Navigate after biometric success is handled in the flow
-                                currentScreen = "settings"
+                                scope.launch {
+                                    biometricHelper.resultFlow.collect { result ->
+                                        when (result) {
+                                            is BiometricHelper.BiometricResult.Success -> {
+                                                currentScreen = "settings"
+                                            }
+                                            else -> {}
+                                        }
+                                    }
+                                }
                             },
                             onBiometricRequest = {
                                 biometricHelper.authenticate(
@@ -66,11 +76,18 @@ class MainActivity : FragmentActivity() {
                                 biometricHelper.authenticate(
                                     activity = this@MainActivity,
                                     title = "Salir de la aplicación",
-                                    subtitle = "Verifique su identidad para salir"
+                                    subtitle = "Solo puede salir con huella del dispositivo"
                                 )
-                                // Exit will be handled after biometric success
-                                // For now, just finish
-                                finish()
+                                scope.launch {
+                                    biometricHelper.resultFlow.collect { result ->
+                                        when (result) {
+                                            is BiometricHelper.BiometricResult.Success -> {
+                                                finish()
+                                            }
+                                            else -> {}
+                                        }
+                                    }
+                                }
                             }
                         )
                         "settings" -> SettingsScreen(
@@ -86,7 +103,6 @@ class MainActivity : FragmentActivity() {
 
     private fun enableFullScreen() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
-
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.statusBars())
         controller.hide(WindowInsetsCompat.Type.navigationBars())
@@ -94,9 +110,8 @@ class MainActivity : FragmentActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
-    // Disable back button for kiosk mode
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        // Do nothing - kiosk mode
+        // Disabled - kiosk mode
     }
 }
