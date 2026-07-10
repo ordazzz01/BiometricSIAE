@@ -2,8 +2,8 @@ package com.siae.biometricsiae
 
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,7 +17,7 @@ import com.siae.biometricsiae.feature.CheckinScreen
 import com.siae.biometricsiae.feature.SettingsScreen
 import com.siae.biometricsiae.ui.theme.BiometricSIAETheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private lateinit var biometricHelper: BiometricHelper
     private val repository = FirestoreRepository()
